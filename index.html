@@ -3,10 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>FoodBiler KDS & POS</title>
-    <!-- Firebase App y Realtime Database SDKs -->
+    <title>FoodBiker KDS & POS</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
+    <script>
+      const firebaseConfig = {
+        apiKey: "AIzaSyDltAEWpT9Drej-VchJwY3Y548HaB8Jep8",
+        authDomain: "foodbiker02.firebaseapp.com",
+        databaseURL: "https://foodbiker02-default-rtdb.firebaseio.com",
+        projectId: "foodbiker02",
+        storageBucket: "foodbiker02.firebasestorage.app",
+        messagingSenderId: "1039347839394",
+        appId: "1:1039347839394:web:064b54b02077e23f5f02fb",
+        measurementId: "G-8K6202KWMK"
+      };
+      
+      if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+      }
+      const database = firebase.database();
+    </script>
+
     <style>
         :root {
             --bg-primary: #121212;
@@ -225,13 +243,6 @@
             color: var(--brand-color);
         }
 
-        .tag-btn.removed {
-            background-color: rgba(211, 47, 47, 0.15);
-            border-color: var(--red-alert);
-            color: var(--red-alert);
-            text-decoration: line-through;
-        }
-
         /* SELECTORES DE MODALIDAD */
         .modalities-container {
             display: flex;
@@ -295,7 +306,7 @@
         .btn-muted { background-color: var(--bg-accent); color: var(--text-main); }
         .btn-danger { background-color: var(--red-alert); color: white; }
 
-        /* CATEGORIAS FILTROS DE MESA */
+        /* CATEGORIAS FILTROS */
         .cat-scroll {
             display: flex;
             gap: 8px;
@@ -339,6 +350,7 @@
             display: flex;
             flex-direction: column;
             justify-content: space-between;
+            margin-bottom: 10px;
         }
 
         .ticket-header {
@@ -403,21 +415,19 @@
 
     <header>
         <div class="logo-section">
-            <h1 id="header-title">FoodBiler</h1>
+            <h1 id="header-title">FoodBiker</h1>
             <span id="header-subtitle">Mesero</span>
         </div>
-        <div id="global-status" style="font-size: 12px; color: var(--green-ok);">● Local (Sin Sincronizar)</div>
+        <div id="global-status" style="font-size: 12px; color: var(--green-ok);">● Sincronizado (Firebase)</div>
     </header>
 
-    <!-- NAVEGACIÓN PRINCIPAL -->
     <nav class="role-nav">
-        <button class="role-btn active" onclick="switchRole('mesero')">Mesero</button>
-        <button class="role-btn" onclick="switchRole('cocina')">Cocina</button>
-        <button class="role-btn" onclick="switchRole('caja')">Caja</button>
-        <button class="role-btn" onclick="switchRole('admin')">Admin</button>
+        <button class="role-btn active" id="nav-mesero" onclick="switchRole('mesero')">Mesero</button>
+        <button class="role-btn" id="nav-cocina" onclick="switchRole('cocina')">Cocina</button>
+        <button class="role-btn" id="nav-caja" onclick="switchRole('caja')">Caja</button>
+        <button class="role-btn" id="nav-admin" onclick="switchRole('admin')">Admin</button>
     </nav>
 
-    <!-- ================= VISTA: MESERO ================= -->
     <main id="view-mesero" class="view-panel active">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
             <select id="waiter-table-select" class="text-input" style="width: auto; margin-bottom:0;" onchange="loadTableOrder()">
@@ -432,15 +442,13 @@
             <div id="waiter-order-total" style="font-size: 20px; font-weight: bold; color: var(--yellow-warn);">S/ 0.00</div>
         </div>
 
-        <!-- Selector de Modalidad -->
         <div class="modalities-container" id="waiter-modalities">
-            <button class="mod-btn active" onclick="setModalidad('Salón')">🪑 Salón</button>
-            <button class="mod-btn" onclick="setModalidad('Llevar')">🛍️ Llevar</button>
-            <button class="mod-btn" onclick="setModalidad('Recojo')">📦 Recojo</button>
-            <button class="mod-btn" onclick="setModalidad('Delivery')">🛵 Delivery</button>
+            <button class="mod-btn active" id="mod-Salon" onclick="setModalidad('Salón')">🪑 Salón</button>
+            <button class="mod-btn" id="mod-Llevar" onclick="setModalidad('Llevar')">🛍️ Llevar</button>
+            <button class="mod-btn" id="mod-Recojo" onclick="setModalidad('Recojo')">📦 Recojo</button>
+            <button class="mod-btn" id="mod-Delivery" onclick="setModalidad('Delivery')">🛵 Delivery</button>
         </div>
 
-        <!-- Campos adicionales Caja Rápida o Delivery -->
         <div id="extra-fields-waiter" style="display:none; background: var(--bg-secondary); padding: 12px; border-radius:8px; margin-bottom:12px;">
             <div id="crm-fields" style="display:none;" class="input-group">
                 <input type="text" id="cust-name" placeholder="Nombre del cliente (Obligatorio)" class="text-input" style="margin-bottom:8px;">
@@ -452,88 +460,516 @@
             </div>
         </div>
 
-        <!-- Item Personalizado Rápido -->
         <div style="display: flex; gap: 8px; margin-bottom: 12px;">
             <input type="text" id="custom-item-name" placeholder="Ítem personalizado fuera de carta..." class="text-input" style="margin-bottom:0; flex:2;">
             <input type="number" id="custom-item-price" placeholder="S/." class="text-input" style="margin-bottom:0; flex:1;">
             <button class="btn btn-brand" onclick="addCustomItem()">+ Agregar</button>
         </div>
 
-        <!-- Categorías de Menú -->
         <div class="cat-scroll">
-            <button class="tag-btn selected" onclick="filterMenu('burgers', this)">Burgers</button>
-            <button class="tag-btn" onclick="filterMenu('plato', this)">Al Plato</button>
-            <button class="tag-btn" onclick="filterMenu('sharing', this)">Compartir</button>
-            <button class="tag-btn" onclick="filterMenu('wings', this)">Alitas</button>
-            <button class="tag-btn" onclick="filterMenu('antojos', this)">Antojos/Postres</button>
-            <button class="tag-btn" onclick="filterMenu('refrescantes', this)">Refrescantes</button>
-            <button class="tag-btn" onclick="filterMenu('bubble_tea', this)">Bubble Tea</button>
-            <button class="tag-btn" onclick="filterMenu('cocteles', this)">Cocteles</button>
+            <button class="tag-btn selected" id="cat-burgers" onclick="filterMenu('burgers', this)">Burgers</button>
+            <button class="tag-btn" id="cat-plato" onclick="filterMenu('plato', this)">Al Plato</button>
+            <button class="tag-btn" id="cat-sharing" onclick="filterMenu('sharing', this)">Compartir</button>
+            <button class="tag-btn" id="cat-wings" onclick="filterMenu('wings', this)">Alitas</button>
+            <button class="tag-btn" id="cat-antojos" onclick="filterMenu('antojos', this)">Antojos</button>
+            <button class="tag-btn" id="cat-refrescantes" onclick="filterMenu('refrescantes', this)">Refrescantes</button>
         </div>
 
-        <!-- Grid de Productos -->
         <div class="grid-menu" id="menu-container"></div>
 
-        <!-- Resumen de Pedido de la Mesa Actual -->
         <div style="margin-top: 20px; background: var(--bg-secondary); padding: 14px; border-radius: 12px;">
             <h3 style="font-size: 14px; text-transform: uppercase; margin-bottom: 8px; color: var(--text-muted)">Resumen de Comanda</h3>
             <div id="waiter-summary-list" style="font-size: 13px; margin-bottom: 12px;"></div>
             <div class="footer-actions">
                 <button class="btn btn-danger" onclick="clearCurrentOrder()">Borrar</button>
-                <button class="btn btn-muted" onclick="alert('Pre-cuenta impresa de manera simulada.')">Pre-Cuenta</button>
+                <button class="btn btn-muted" onclick="showToast('Pre-cuenta simulada')">Pre-Cuenta</button>
                 <button class="btn btn-green" style="grid-column: span 2;" onclick="sendOrderToKitchen()">🚀 Enviar a Cocina</button>
             </div>
         </div>
     </main>
 
-    <!-- ================= VISTA: COCINA (KDS) ================= -->
     <main id="view-cocina" class="view-panel">
         <div class="kds-container" id="kds-tickets-wrapper"></div>
     </main>
 
-    <!-- ================= VISTA: CAJA (POS) ================= -->
     <main id="view-caja" class="view-panel">
         <div class="cat-scroll" style="border-bottom: 1px solid var(--bg-accent); padding-bottom:10px;">
-            <button class="tag-btn selected" onclick="switchCajaTab('por-cobrar', this)">Por Cobrar</button>
-            <button class="tag-btn" onclick="switchCajaTab('historial', this)">Historial</button>
-            <button class="tag-btn" onclick="switchCajaTab('reportes', this)">Reportes e Ingresos</button>
+            <button class="tag-btn selected" id="tab-por-cobrar" onclick="switchCajaTab('por-cobrar', this)">Por Cobrar</button>
+            <button class="tag-btn" id="tab-historial" onclick="switchCajaTab('historial', this)">Historial</button>
+            <button class="tag-btn" id="tab-reportes" onclick="switchCajaTab('reportes', this)">Reportes e Ingresos</button>
         </div>
 
-        <!-- Sub-Vista: Por Cobrar -->
         <div id="caja-por-cobrar" class="caja-subview">
             <div class="kds-container" id="caja-orders-wrapper"></div>
         </div>
 
-        <!-- Sub-Vista: Historial -->
         <div id="caja-historial" class="caja-subview" style="display:none;">
             <div class="kds-container" id="caja-historial-wrapper"></div>
         </div>
 
-        <!-- Sub-Vista: Reportes -->
         <div id="caja-reportes" class="caja-subview" style="display:none;">
             <div style="background: var(--bg-secondary); padding: 16px; border-radius:12px; margin-bottom: 15px;">
                 <h3 style="margin-bottom:12px;">Filtros de Período</h3>
                 <div class="options-list">
                     <button class="tag-btn selected" onclick="generateReport('hoy', this)">Hoy</button>
-                    <button class="tag-btn" onclick="generateReport('ayer', this)">Solo Ayer</button>
-                    <button class="tag-btn" onclick="generateReport('hoy+ayer', this)">Hoy + Ayer</button>
-                    <button class="tag-btn" onclick="generateReport('3dias', this)">3 Días</button>
-                    <button class="tag-btn" onclick="generateReport('30dias', this)">30 Días</button>
+                    <button class="tag-btn" onclick="clearDayHistory()">🗑️ Borrar Historial</button>
                 </div>
-                <div style="display:flex; gap:10px; align-items:center; margin-top:10px;">
-                    <input type="date" id="rep-start" class="text-input" style="margin-bottom:0;">
-                    <span>al</span>
-                    <input type="date" id="rep-end" class="text-input" style="margin-bottom:0;">
-                    <button class="btn btn-brand" onclick="generateReport('custom', null)">Filtrar Rango</button>
-                </div>
-                <button class="btn btn-danger" style="width:100%; margin-top:15px; font-size:12px;" onclick="clearDayHistory()">🗑️ Borrar Historial del Día</button>
             </div>
 
-            <!-- Resultados del Reporte -->
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
                 <div style="background: var(--bg-secondary); padding:16px; border-radius:12px; text-align:center;">
                     <span style="font-size:12px; color:var(--text-muted); text-transform:uppercase;">Venta Bruta Total</span>
                     <h2 id="rep-gross" style="color: var(--yellow-warn); font-size:28px; margin-top:5px;">S/ 0.00</h2>
                 </div>
                 <div style="background: var(--bg-secondary); padding:16px; border-radius:12px; text-align:center;">
-                    <span style="font-size:12px; color:var(--text-muted); text-transform:u
+                    <span style="font-size:12px; color:var(--text-muted); text-transform:uppercase;">Pedidos Totales</span>
+                    <h2 id="rep-qty" style="color: var(--green-ok); font-size:28px; margin-top:5px;">0</h2>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <main id="view-admin" class="view-panel">
+        <div style="background: var(--bg-secondary); padding: 20px; border-radius: 12px;">
+            <h2 style="margin-bottom: 15px; color: var(--brand-color);">Panel de Configuración</h2>
+            <p style="font-size: 14px; color: var(--text-muted); margin-bottom: 20px;">Control total del flujo de datos de FoodBiker.</p>
+            <button class="btn btn-danger" style="width: 100%; max-width: 300px;" onclick="resetAllFirebaseData()">⚠️ Forzar Reinicio General de Firebase</button>
+        </div>
+    </main>
+
+    <div id="modal-customization" class="modal-overlay">
+        <div class="modal-body">
+            <h2 class="modal-title" id="modal-item-title">Personalizar Producto</h2>
+            
+            <div class="section-title">Cremas Obligatorias / Adicionales</div>
+            <div class="options-list" id="modal-cremas">
+                <button class="tag-btn" onclick="toggleTag(this)">Mayonesa</button>
+                <button class="tag-btn" onclick="toggleTag(this)">Ketchup</button>
+                <button class="tag-btn" onclick="toggleTag(this)">Mostaza</button>
+                <button class="tag-btn" onclick="toggleTag(this)">Ají Casero</button>
+                <button class="tag-btn" onclick="toggleTag(this)">Tártara</button>
+            </div>
+
+            <div class="section-title">Notas de la Comanda</div>
+            <textarea id="modal-notes" class="text-input" rows="3" placeholder="Ej: Sin cebolla, bien frito, cambiar papas por ensalada..."></textarea>
+
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button class="btn btn-muted" style="flex: 1;" onclick="closeModal()">Cancelar</button>
+                <button class="btn btn-brand" style="flex: 1;" onclick="confirmAddProduct()">Agregar Pedido</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Catálogo de Productos Nativo
+        const PRODUCT_MENU = [
+            { id: "b1", name: "Burger Clásica Biker", price: 16.00, cat: "burgers", desc: "Carne artesanal, queso, lechuga y tomate." },
+            { id: "b2", name: "Burger Suprema Monster", price: 22.00, cat: "burgers", desc: "Doble carne, tocino, queso cheddar y huevo." },
+            { id: "p1", name: "Lomo Saltado Biker", price: 25.00, cat: "plato", desc: "Jugoso lomo al wok con papas fritas y arroz." },
+            { id: "s1", name: "Salchipapa Familiar", price: 30.00, cat: "sharing", desc: "Papas crujientes con variedad de embutidos." },
+            { id: "w1", name: "Alitas BBQ (x6)", price: 18.00, cat: "wings", desc: "Bañadas en salsa barbacoa artesanal." },
+            { id: "a1", name: "Shawarma de Pollo", price: 14.00, cat: "antojos", desc: "Pan pita relleno de pollo sazonado y cremas." },
+            { id: "r1", name: "Chicha Morada 1L", price: 10.00, cat: "refrescantes", desc: "Preparación de la casa 100% natural." }
+        ];
+
+        // Estados Locales de la Aplicación
+        let currentRole = "mesero";
+        let currentTable = "Mesa 1";
+        let currentModalidad = "Salón";
+        let localOrders = {};
+        let activeProductForModal = null;
+
+        // Carga Inicial del Sistema
+        window.addEventListener('DOMContentLoaded', () => {
+            filterMenu('burgers', document.getElementById('cat-burgers'));
+            
+            // Listener en Tiempo Real de Firebase Realtime Database
+            database.ref('orders').on('value', (snapshot) => {
+                localOrders = snapshot.val() || {};
+                renderKDS();
+                renderCaja();
+                loadTableOrder();
+            });
+        });
+
+        // Cambio entre Módulos del Sistema (Mesero, Cocina, Caja, Admin)
+        function switchRole(role) {
+            currentRole = role;
+            document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+            
+            document.getElementById(`view-${role}`).classList.add('active');
+            document.getElementById(`nav-${role}`).classList.add('active');
+
+            document.getElementById('header-subtitle').innerText = role.toUpperCase();
+        }
+
+        // Renderizado Dinámico del Menú de Ventas
+        function filterMenu(cat, element) {
+            document.querySelectorAll('.cat-scroll .tag-btn').forEach(b => b.classList.remove('selected'));
+            if(element) element.classList.add('selected');
+
+            const container = document.getElementById('menu-container');
+            container.innerHTML = "";
+
+            const filtered = PRODUCT_MENU.filter(p => p.cat === cat);
+            filtered.forEach(p => {
+                const card = document.createElement('div');
+                card.className = "card-item";
+                card.onclick = () => openModal(p);
+                card.innerHTML = `
+                    <div>
+                        <h3>${p.name}</h3>
+                        <p>${p.desc}</p>
+                    </div>
+                    <span class="price">S/ ${p.price.toFixed(2)}</span>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Control del Modal de Customización
+        function openModal(product) {
+            activeProductForModal = product;
+            document.getElementById('modal-item-title').innerText = product.name;
+            document.getElementById('modal-notes').value = "";
+            document.querySelectorAll('#modal-cremas .tag-btn').forEach(b => b.classList.remove('selected'));
+            document.getElementById('modal-customization').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('modal-customization').style.display = 'none';
+        }
+
+        function toggleTag(btn) {
+            btn.classList.toggle('selected');
+        }
+
+        // Confirmar y Almacenar el Item en el Borrador de la Mesa
+        function confirmAddProduct() {
+            let cremas = [];
+            document.querySelectorAll('#modal-cremas .tag-btn.selected').forEach(b => {
+                cremas.push(b.innerText);
+            });
+
+            const notas = document.getElementById('modal-notes').value.trim();
+            
+            if(!localOrders[currentTable]) {
+                localOrders[currentTable] = {
+                    items: [],
+                    status: 'Borrador',
+                    modalidad: currentModalidad,
+                    timestamp: Date.now()
+                };
+            }
+
+            localOrders[currentTable].items.push({
+                name: activeProductForModal.name,
+                price: activeProductForModal.price,
+                cremas: cremas.join(', '),
+                notes: notas,
+                done: false
+            });
+
+            closeModal();
+            saveOrderToFirebase(currentTable, localOrders[currentTable]);
+            showToast("Agregado al carrito de la mesa");
+        }
+
+        // Agregar Item Personalizado Directo
+        function addCustomItem() {
+            const name = document.getElementById('custom-item-name').value.trim();
+            const price = parseFloat(document.getElementById('custom-item-price').value);
+
+            if(!name || isNaN(price)) {
+                alert("Asigna un nombre y precio válido al ítem.");
+                return;
+            }
+
+            if(!localOrders[currentTable]) {
+                localOrders[currentTable] = { items: [], status: 'Borrador', modalidad: currentModalidad, timestamp: Date.now() };
+            }
+
+            localOrders[currentTable].items.push({
+                name: `[P] ${name}`,
+                price: price,
+                cremas: "",
+                notes: "Item Personalizado",
+                done: false
+            });
+
+            document.getElementById('custom-item-name').value = "";
+            document.getElementById('custom-item-price').value = "";
+            
+            saveOrderToFirebase(currentTable, localOrders[currentTable]);
+        }
+
+        // Sincronizar Borradores con la Interfaz del Mesero
+        function loadTableOrder() {
+            currentTable = document.getElementById('waiter-table-select').value;
+            const order = localOrders[currentTable];
+            const listContainer = document.getElementById('waiter-summary-list');
+            const totalContainer = document.getElementById('waiter-order-total');
+
+            // Setear visibilidad de inputs extra
+            document.getElementById('extra-fields-waiter').style.display = (currentTable === 'Caja Rapida') ? 'block' : 'none';
+            document.getElementById('crm-fields').style.display = (currentTable === 'Caja Rapida') ? 'block' : 'none';
+
+            if(!order || !order.items || order.items.length === 0) {
+                listContainer.innerHTML = `<p style="color: var(--text-muted);">Mesa vacía. Agrega productos de la carta.</p>`;
+                totalContainer.innerText = "S/ 0.00";
+                return;
+            }
+
+            listContainer.innerHTML = "";
+            let total = 0;
+
+            order.items.forEach((item, index) => {
+                total += item.price;
+                const row = document.createElement('div');
+                row.style = "display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid var(--bg-accent); padding-bottom:4px;";
+                row.innerHTML = `
+                    <div>
+                        <strong>${item.name}</strong> <span style="color:var(--brand-color)">S/ ${item.price.toFixed(2)}</span>
+                        <div style="font-size:11px; color:var(--text-muted);">${item.cremas ? 'Cremas: '+item.cremas : ''} ${item.notes ? '| '+item.notes : ''}</div>
+                    </div>
+                    <button style="background:none; border:none; color:var(--red-alert); cursor:pointer;" onclick="deleteItemFromTable(${index})">✕</button>
+                `;
+                listContainer.appendChild(row);
+            });
+
+            totalContainer.innerText = `S/ ${total.toFixed(2)}`;
+        }
+
+        function deleteItemFromTable(index) {
+            localOrders[currentTable].items.splice(index, 1);
+            if(localOrders[currentTable].items.length === 0) {
+                localOrders[currentTable] = null;
+            }
+            saveOrderToFirebase(currentTable, localOrders[currentTable]);
+        }
+
+        function clearCurrentOrder() {
+            localOrders[currentTable] = null;
+            saveOrderToFirebase(currentTable, null);
+        }
+
+        function setModalidad(mod) {
+            currentModalidad = mod;
+            document.querySelectorAll('#waiter-modalities .mod-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`mod-${mod}`).classList.add('active');
+        }
+
+        // Lanzar Comanda en Vivo a Cocina (KDS)
+        function sendOrderToKitchen() {
+            const order = localOrders[currentTable];
+            if(!order || !order.items || order.items.length === 0) {
+                alert("No hay ítems para enviar a producción.");
+                return;
+            }
+
+            order.status = "En Cocina";
+            order.timestamp = Date.now();
+            order.modalidad = currentModalidad;
+
+            if(currentTable === 'Caja Rapida') {
+                const clientName = document.getElementById('cust-name').value.trim();
+                if(!clientName) {
+                    alert("Por favor ingresa el nombre del cliente.");
+                    return;
+                }
+                order.cliente = clientName;
+                order.telefono = document.getElementById('cust-phone').value.trim();
+            }
+
+            saveOrderToFirebase(currentTable, order);
+            showToast("🚀 ¡Comanda enviada a Cocina!");
+        }
+
+        // ================= MOTOR DE RENDERIZACIÓN KDS (COCINA) =================
+        function renderKDS() {
+            const container = document.getElementById('kds-tickets-wrapper');
+            container.innerHTML = "";
+
+            let count = 0;
+            for(let key in localOrders) {
+                const order = localOrders[key];
+                if(!order || order.status !== "En Cocina") continue;
+                count++;
+
+                const mins = Math.floor((Date.now() - order.timestamp) / 60000);
+                let timerClass = "timer-green";
+                if(mins >= 10 && mins < 15) timerClass = "timer-yellow";
+                if(mins >= 15) timerClass = "timer-red";
+
+                const ticket = document.createElement('div');
+                ticket.className = "kds-ticket";
+                
+                let itemsHtml = "";
+                order.items.forEach((item, index) => {
+                    itemsHtml += `
+                        <div class="kds-item-row ${item.done ? 'done' : ''}" onclick="toggleItemDone('${key}', ${index})">
+                            <input type="checkbox" ${item.done ? 'checked' : ''}>
+                            <span><strong>${item.name}</strong><br><small style="color:var(--text-muted)">${item.cremas} ${item.notes}</small></span>
+                        </div>
+                    `;
+                });
+
+                ticket.innerHTML = `
+                    <div>
+                        <div class="ticket-header">
+                            <div>
+                                <h3>${key}</h3>
+                                <span style="font-size:11px; color:var(--brand-color)">${order.modalidad} ${order.cliente ? '- '+order.cliente : ''}</span>
+                            </div>
+                            <span class="timer-badge ${timerClass}">⏱️ ${mins}m</span>
+                        </div>
+                        <div>${itemsHtml}</div>
+                    </div>
+                    <button class="btn btn-green" style="width:100%; margin-top:15px;" onclick="finishKitchenOrder('${key}')">Despachar Pedido</button>
+                `;
+                container.appendChild(ticket);
+            }
+
+            if(count === 0) {
+                container.innerHTML = `<p style="color:var(--text-muted); grid-column:1/-1; text-align:center; padding:40px;">Pantalla limpia. No hay órdenes pendientes en Cocina. 🧑‍🍳</p>`;
+            }
+        }
+
+        function toggleItemDone(tableKey, itemIndex) {
+            localOrders[tableKey].items[itemIndex].done = !localOrders[tableKey].items[itemIndex].done;
+            saveOrderToFirebase(tableKey, localOrders[tableKey]);
+        }
+
+        function finishKitchenOrder(tableKey) {
+            localOrders[tableKey].status = "Listo para Cobrar";
+            saveOrderToFirebase(tableKey, localOrders[tableKey]);
+            showToast("Pedido listo en estación de despacho");
+        }
+
+        // ================= MOTOR DE RENDERIZACIÓN POS (CAJA) =================
+        function renderCaja() {
+            const pCobrarWrapper = document.getElementById('caja-orders-wrapper');
+            const historialWrapper = document.getElementById('caja-historial-wrapper');
+
+            pCobrarWrapper.innerHTML = "";
+            historialWrapper.innerHTML = "";
+
+            let countCobrar = 0;
+            let countHistorial = 0;
+            let grossTotal = 0;
+
+            for(let key in localOrders) {
+                const order = localOrders[key];
+                if(!order) continue;
+
+                let subtotal = 0;
+                order.items.forEach(i => subtotal += i.price);
+
+                if(order.status === "Listo para Cobrar" || order.status === "En Cocina") {
+                    countCobrar++;
+                    const ticket = document.createElement('div');
+                    ticket.className = "kds-ticket";
+                    ticket.style.borderTopColor = order.status === "En Cocina" ? "var(--yellow-warn)" : "var(--green-ok)";
+                    
+                    ticket.innerHTML = `
+                        <div class="ticket-header">
+                            <div>
+                                <h3>${key}</h3>
+                                <small style="color:var(--text-muted)">Estado: ${order.status}</small>
+                            </div>
+                            <span style="font-size:18px; font-weight:bold; color:var(--yellow-warn)">S/ ${subtotal.toFixed(2)}</span>
+                        </div>
+                        <div class="split-box">
+                            <div class="input-group">
+                                <label>Método de Pago</label>
+                                <select id="pay-method-${key}" class="text-input" style="margin-bottom:0; padding:5px;">
+                                    <option value="Efectivo">💵 Efectivo</option>
+                                    <option value="Yape">📱 Yape</option>
+                                    <option value="Plin">📱 Plin</option>
+                                    <option value="Tarjeta">💳 Tarjeta Crédito/Débito</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button class="btn btn-brand" style="width:100%;" onclick="collectOrder('${key}', ${subtotal})">💰 Procesar Pago e Imprimir</button>
+                    `;
+                    pCobrarWrapper.appendChild(ticket);
+                } 
+                else if(order.status === "Pagado") {
+                    countHistorial++;
+                    grossTotal += subtotal;
+                    const ticket = document.createElement('div');
+                    ticket.className = "kds-ticket";
+                    ticket.style.borderTopColor = "var(--text-muted)";
+                    ticket.innerHTML = `
+                        <div class="ticket-header">
+                            <div>
+                                <h3>${key}</h3>
+                                <small style="color:var(--text-muted)">Pago: ${order.metodoPago || 'Efectivo'}</small>
+                            </div>
+                            <span style="font-weight:bold; color:var(--green-ok)">S/ ${subtotal.toFixed(2)}</span>
+                        </div>
+                        <p style="font-size:11px; color:var(--text-muted)">Cerrado: ${new Date(order.timestamp).toLocaleTimeString()}</p>
+                    `;
+                    historialWrapper.appendChild(ticket);
+                }
+            }
+
+            document.getElementById('rep-gross').innerText = `S/ ${grossTotal.toFixed(2)}`;
+            document.getElementById('rep-qty').innerText = countHistorial;
+
+            if(countCobrar === 0) pCobrarWrapper.innerHTML = `<p style="color:var(--text-muted); grid-column:1/-1; text-align:center; padding:30px;">No hay cuentas pendientes por cobrar.</p>`;
+            if(countHistorial === 0) historialWrapper.innerHTML = `<p style="color:var(--text-muted); grid-column:1/-1; text-align:center; padding:30px;">Ninguna venta procesada hoy.</p>`;
+        }
+
+        function collectOrder(tableKey, totalAmount) {
+            const method = document.getElementById(`pay-method-${tableKey}`).value;
+            localOrders[tableKey].status = "Pagado";
+            localOrders[tableKey].metodoPago = method;
+            localOrders[tableKey].timestamp = Date.now();
+
+            saveOrderToFirebase(tableKey, localOrders[tableKey]);
+            showToast(`¡Cuenta de ${tableKey} Pagada con ${method}!`);
+        }
+
+        function switchCajaTab(tabId, element) {
+            document.querySelectorAll('.caja-subview').forEach(v => v.style.display = 'none');
+            document.querySelectorAll('.cat-scroll .tag-btn').forEach(b => b.classList.remove('selected'));
+            
+            element.classList.add('selected');
+            document.getElementById(`caja-${tabId}`).style.display = 'block';
+        }
+
+        // ================= CONEXIÓN DE ESCRITURA CON FIREBASE =================
+        function saveOrderToFirebase(tableKey, data) {
+            database.ref('orders/' + tableKey).set(data);
+        }
+
+        function clearDayHistory() {
+            if(confirm("¿Seguro que deseas vaciar el historial de ventas pagadas? Esto limpiará los reportes del día.")) {
+                for(let key in localOrders) {
+                    if(localOrders[key] && localOrders[key].status === "Pagado") {
+                        database.ref('orders/' + key).remove();
+                    }
+                }
+                showToast("Historial de Caja Limpiado");
+            }
+        }
+
+        function resetAllFirebaseData() {
+            if(confirm("¡ATENCIÓN! Se eliminarán todas las mesas, comandas y registros de Firebase de forma permanente. ¿Proceder?")) {
+                database.ref('orders').remove();
+                showToast("Firebase Reseteado Correctamente");
+            }
+        }
+
+        // Sistema de Notificaciones Toast
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg;
+            toast.style.display = 'block';
+            setTimeout(() => { toast.style.display = 'none'; }, 2500);
+        }
+    </script>
+</body>
+</html>
